@@ -3,124 +3,96 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Blooming Heart Flower</title>
+
+<title>Bloom</title>
 
 <style>
-    html, body {
-        margin: 0;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        background: #000;
-    }
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #170014;
+}
 
-    canvas {
-        display: block;
-        width: 100vw;
-        height: 100vh;
-        background: #170013;
-    }
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
 </style>
 </head>
 
 <body>
 
-<canvas id="canvas"></canvas>
+<canvas id="flower"></canvas>
 
 <script>
 
-const canvas = document.getElementById("canvas");
+const canvas = document.getElementById("flower");
 const ctx = canvas.getContext("2d");
 
 let W, H;
+let startTime = performance.now();
 
 function resize() {
-    W = canvas.width = window.innerWidth * devicePixelRatio;
-    H = canvas.height = window.innerHeight * devicePixelRatio;
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
 
-    canvas.style.width = window.innerWidth + "px";
-    canvas.style.height = window.innerHeight + "px";
-
-    ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
 }
 
-resize();
 window.addEventListener("resize", resize);
+resize();
 
 
-// --------------------------------------------------
+// -----------------------------
 // SETTINGS
-// --------------------------------------------------
+// -----------------------------
 
-const CX = () => window.innerWidth / 2;
-const FLOWER_Y = () => window.innerHeight * 0.43;
+const flowerX = () => W / 2;
+const flowerY = () => H * 0.43;
 
-let progress = 0;
-let particles = [];
+const stemBottom = () => H * 0.78;
+
+let hearts = [];
 
 
-// --------------------------------------------------
-// HEART / PETAL SHAPE
-// --------------------------------------------------
+// -----------------------------
+// SMALL HEART
+// -----------------------------
 
-function drawPetal(x, y, angle, length, width, color, amount) {
+function heart(x, y, s, alpha) {
 
     ctx.save();
 
-    ctx.translate(x, y);
-    ctx.rotate(angle);
-
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1.6;
-    ctx.lineCap = "round";
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = "#ff72bd";
+    ctx.lineWidth = 1;
 
     ctx.beginPath();
 
-    let steps = 32;
+    ctx.moveTo(x, y + s);
 
-    for (let i = 0; i <= steps * amount; i++) {
+    ctx.bezierCurveTo(
+        x - s * 1.5,
+        y - s * 0.2,
+        x - s,
+        y - s,
+        x,
+        y - s * 0.25
+    );
 
-        let t = i / steps;
-
-        let px =
-            Math.sin(t * Math.PI) * width
-            + t * length;
-
-        let py =
-            Math.sin(t * Math.PI * 2) * width * 0.42;
-
-        // Slight natural variation
-        py += Math.sin(t * 13) * 1.2;
-
-        if (i === 0)
-            ctx.moveTo(px, py);
-        else
-            ctx.lineTo(px, py);
-    }
-
-    ctx.stroke();
-
-    // second curved side
-    ctx.beginPath();
-
-    for (let i = 0; i <= steps * amount; i++) {
-
-        let t = i / steps;
-
-        let px =
-            Math.sin(t * Math.PI) * width
-            + t * length;
-
-        let py =
-            -Math.sin(t * Math.PI * 2) * width * 0.42;
-
-        py += Math.sin(t * 11) * 1.0;
-
-        if (i === 0)
-            ctx.moveTo(px, py);
-        else
-            ctx.lineTo(px, py);
-    }
+    ctx.bezierCurveTo(
+        x + s,
+        y - s,
+        x + s * 1.5,
+        y - s * 0.2,
+        x,
+        y + s
+    );
 
     ctx.stroke();
 
@@ -128,53 +100,64 @@ function drawPetal(x, y, angle, length, width, color, amount) {
 }
 
 
-// --------------------------------------------------
+// -----------------------------
 // STEM
-// --------------------------------------------------
+// -----------------------------
 
-function drawStem(amount) {
+function drawStem(progress) {
 
-    const x = CX();
-    const bottom = FLOWER_Y() + 210;
-    const top = FLOWER_Y() + 25;
+    if (progress <= 0) return;
 
-    let current = bottom - (bottom - top) * amount;
+    let bottom = stemBottom();
+    let top = flowerY() + 20;
 
-    ctx.strokeStyle = "#258b57";
+    let current =
+        bottom - (bottom - top) * progress;
+
+    ctx.strokeStyle = "#238b52";
     ctx.lineWidth = 2;
 
     ctx.beginPath();
 
-    ctx.moveTo(x, bottom);
+    ctx.moveTo(flowerX(), bottom);
 
     for (let y = bottom; y >= current; y -= 2) {
 
-        let t = (bottom - y) / (bottom - top);
+        let t =
+            (bottom - y) /
+            (bottom - top);
 
         let bend =
-            Math.sin(t * 3.2) * 12 +
-            Math.sin(t * 7) * 3;
+            Math.sin(t * 3.5) * 14 +
+            Math.sin(t * 9) * 3;
 
-        ctx.lineTo(x + bend, y);
+        ctx.lineTo(
+            flowerX() + bend,
+            y
+        );
     }
 
     ctx.stroke();
 }
 
 
-// --------------------------------------------------
+// -----------------------------
 // LEAF
-// --------------------------------------------------
+// -----------------------------
 
-function drawLeaf(x, y, angle, size, amount) {
+function drawLeaf(x, y, size, angle, progress) {
+
+    if (progress <= 0) return;
 
     ctx.save();
 
     ctx.translate(x, y);
     ctx.rotate(angle);
 
-    ctx.strokeStyle = "#16834d";
-    ctx.fillStyle = "#126b40";
+    ctx.globalAlpha = progress;
+
+    ctx.strokeStyle = "#21884e";
+    ctx.fillStyle = "#126d3e";
     ctx.lineWidth = 1.5;
 
     ctx.beginPath();
@@ -182,152 +165,213 @@ function drawLeaf(x, y, angle, size, amount) {
     ctx.moveTo(0, 0);
 
     ctx.quadraticCurveTo(
-        size * 0.55,
-        -size * 0.55,
+        size * 0.5,
+        -size * 0.6,
         size,
         0
     );
 
     ctx.quadraticCurveTo(
         size * 0.5,
-        size * 0.55,
+        size * 0.6,
         0,
         0
     );
 
     ctx.stroke();
-
-    ctx.globalAlpha = amount * 0.65;
     ctx.fill();
 
-    ctx.globalAlpha = 1;
-
     ctx.beginPath();
+
     ctx.moveTo(0, 0);
-    ctx.lineTo(size * 0.8, 0);
+    ctx.lineTo(size, 0);
+
     ctx.stroke();
 
     ctx.restore();
 }
 
 
-// --------------------------------------------------
-// FLOWER PETALS
-// --------------------------------------------------
+// -----------------------------
+// ONE LOOPING PETAL
+// -----------------------------
 
-function drawFlower(amount) {
+function petalLoop(
+    cx,
+    cy,
+    radius,
+    size,
+    rotation,
+    progress,
+    color
+) {
 
-    const x = CX();
-    const y = FLOWER_Y();
+    if (progress <= 0) return;
 
-    // Different rings like the original Turtle effect
+    ctx.save();
+
+    ctx.translate(cx, cy);
+    ctx.rotate(rotation);
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.25;
+
+    ctx.globalAlpha = 0.85;
+
+    let total = Math.PI * 2;
+    let end = total * progress;
+
+    ctx.beginPath();
+
+    for (let a = 0; a <= end; a += 0.045) {
+
+        /*
+         * This creates the characteristic
+         * looping/scribbled flower petals.
+         */
+
+        let wave =
+            Math.sin(a * 2.5) * size * 0.25;
+
+        let r =
+            radius +
+            Math.sin(a * 5) * size * 0.18;
+
+        let x =
+            Math.cos(a) * (r + wave);
+
+        let y =
+            Math.sin(a) *
+            (r * 0.48);
+
+        // Slight irregularity
+        x += Math.sin(a * 13) * 1.5;
+        y += Math.cos(a * 11) * 1.2;
+
+        if (a === 0)
+            ctx.moveTo(x, y);
+        else
+            ctx.lineTo(x, y);
+    }
+
+    ctx.stroke();
+
+    ctx.restore();
+}
+
+
+// -----------------------------
+// FLOWER
+// -----------------------------
+
+function drawFlower(progress) {
+
+    if (progress <= 0) return;
+
+    const x = flowerX();
+    const y = flowerY();
+
+    /*
+     * Many rings are used.
+     * This is what makes the final flower
+     * look dense like the video.
+     */
+
     const rings = [
 
-        {
-            radius: 8,
-            count: 4,
-            length: 42,
-            width: 14,
-            color: "#ffb6df",
-            offset: 45
-        },
-
-        {
-            radius: 18,
-            count: 5,
-            length: 55,
-            width: 20,
-            color: "#ff8ed0",
-            offset: 0
-        },
-
-        {
-            radius: 30,
-            count: 7,
-            length: 68,
-            width: 25,
-            color: "#ff67c3",
-            offset: 25
-        },
-
-        {
-            radius: 43,
-            count: 9,
-            length: 82,
-            width: 31,
-            color: "#f94fae",
-            offset: 15
-        },
-
-        {
-            radius: 58,
-            count: 12,
-            length: 100,
-            width: 37,
-            color: "#e93b9d",
-            offset: 0
-        }
-
+        [4, 7, 10, "#ffb8df"],
+        [9, 9, 13, "#ff9bd3"],
+        [15, 11, 15, "#ff83c9"],
+        [22, 13, 18, "#ff69bf"],
+        [30, 15, 21, "#ff55b5"],
+        [38, 17, 23, "#f947aa"],
+        [46, 19, 25, "#f238a0"],
+        [54, 21, 27, "#e92f98"],
+        [62, 23, 29, "#df268f"]
     ];
 
 
-    rings.forEach((ring, ringIndex) => {
+    rings.forEach((ring, index) => {
 
-        // Each ring appears after the previous one
-        let ringStart = ringIndex * 0.12;
+        let radius = ring[0];
+        let count = ring[1];
+        let size = ring[2];
+        let color = ring[3];
 
-        let ringAmount =
+        /*
+         * Rings appear one after another.
+         */
+
+        let delay = index * 0.075;
+
+        let p =
             Math.max(
                 0,
                 Math.min(
                     1,
-                    (amount - ringStart) / 0.25
+                    (progress - delay) / 0.22
                 )
             );
 
-        if (ringAmount <= 0) return;
 
-
-        for (let i = 0; i < ring.count; i++) {
+        for (let i = 0; i < count; i++) {
 
             let angle =
-                (Math.PI * 2 / ring.count) * i
-                + ring.offset * Math.PI / 180;
+                (Math.PI * 2 / count) * i;
 
-            let px =
-                x +
-                Math.cos(angle) * ring.radius;
+            /*
+             * Random-looking but deterministic
+             * variation.
+             */
 
-            let py =
-                y +
-                Math.sin(angle) * ring.radius * 0.55;
+            let offset =
+                Math.sin(index * 7 + i * 13) * 5;
 
-            drawPetal(
-                px,
-                py,
-                angle,
-                ring.length,
-                ring.width,
-                ring.color,
-                ringAmount
+            petalLoop(
+                x + Math.cos(angle) * radius * 0.25,
+                y + Math.sin(angle) * radius * 0.20,
+
+                radius + offset,
+
+                size,
+
+                angle +
+                Math.sin(i * 3 + index) * 0.25,
+
+                p,
+
+                color
             );
         }
     });
 
 
     // Bright center
-    if (amount > 0.25) {
 
-        let centerAmount =
-            Math.min(1, (amount - 0.25) / 0.5);
+    let center =
+        Math.min(
+            1,
+            Math.max(0, progress - 0.3) / 0.5
+        );
+
+    if (center > 0) {
 
         ctx.save();
 
-        ctx.globalAlpha = centerAmount * 0.8;
-        ctx.fillStyle = "#ffb8e2";
+        ctx.globalAlpha = center * 0.7;
+
+        ctx.fillStyle = "#ff9ed5";
 
         ctx.beginPath();
-        ctx.arc(x, y, 8, 0, Math.PI * 2);
+
+        ctx.arc(
+            x,
+            y,
+            5 + center * 5,
+            0,
+            Math.PI * 2
+        );
+
         ctx.fill();
 
         ctx.restore();
@@ -335,193 +379,185 @@ function drawFlower(amount) {
 }
 
 
-// --------------------------------------------------
+// -----------------------------
 // FLOATING HEARTS
-// --------------------------------------------------
+// -----------------------------
 
-function createParticles() {
+function createHearts() {
 
-    particles = [];
+    hearts = [];
 
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < 22; i++) {
 
-        particles.push({
+        hearts.push({
 
-            x: CX() + (Math.random() - 0.5) * 300,
+            x:
+                flowerX() +
+                (Math.random() - 0.5) * 270,
 
-            y: FLOWER_Y() -
-               Math.random() * 190,
+            y:
+                flowerY() -
+                40 -
+                Math.random() * 220,
 
-            size: 7 + Math.random() * 5,
+            size:
+                3 + Math.random() * 3,
 
-            delay: Math.random() * 0.5,
-
-            rotation:
-                (Math.random() - 0.5) * 0.5
+            delay:
+                Math.random() * 0.5
         });
     }
 }
 
 
-function drawHeart(x, y, size, rotation, alpha) {
+function drawHearts(progress) {
 
-    ctx.save();
+    hearts.forEach(h => {
 
-    ctx.translate(x, y);
-    ctx.rotate(rotation);
-
-    ctx.globalAlpha = alpha;
-
-    ctx.strokeStyle = "#ff8ecb";
-    ctx.lineWidth = 1.1;
-
-    ctx.beginPath();
-
-    ctx.moveTo(0, size * 0.75);
-
-    ctx.bezierCurveTo(
-        -size * 1.2,
-        -size * 0.05,
-        -size * 0.9,
-        -size,
-        0,
-        -size * 0.35
-    );
-
-    ctx.bezierCurveTo(
-        size * 0.9,
-        -size,
-        size * 1.2,
-        -size * 0.05,
-        0,
-        size * 0.75
-    );
-
-    ctx.stroke();
-
-    ctx.restore();
-}
-
-
-function drawParticles(amount) {
-
-    particles.forEach((p, i) => {
-
-        let visible =
+        let p =
             Math.max(
                 0,
                 Math.min(
                     1,
-                    (amount - p.delay) / 0.3
+                    (progress - h.delay) / 0.4
                 )
             );
 
-        if (visible <= 0) return;
+        if (p <= 0) return;
 
-        drawHeart(
-            p.x,
-            p.y,
-            p.size,
-            p.rotation,
-            visible * 0.65
+        heart(
+            h.x,
+            h.y,
+            h.size,
+            p * 0.7
         );
     });
 }
 
 
-// --------------------------------------------------
-// ANIMATION
-// --------------------------------------------------
+// -----------------------------
+// MAIN ANIMATION
+// -----------------------------
 
-function animate() {
+function animate(time) {
 
-    ctx.clearRect(
-        0,
-        0,
-        window.innerWidth,
-        window.innerHeight
-    );
+    let elapsed =
+        (time - startTime) / 1000;
 
-    // Dark maroon background
-    ctx.fillStyle = "#170013";
+    /*
+     * 0 - 3 sec:
+     * stem
+     *
+     * 2 - 10 sec:
+     * flower grows
+     *
+     * 9 - 12 sec:
+     * hearts appear
+     *
+     * then restart
+     */
+
+    let cycle =
+        elapsed % 13;
+
+    // Background
+
+    ctx.fillStyle = "#170014";
 
     ctx.fillRect(
         0,
         0,
-        window.innerWidth,
-        window.innerHeight
+        W,
+        H
     );
 
 
-    // -----------------------------------------------
-    // TIMELINE
-    // -----------------------------------------------
+    // -------------------------
+    // STEM
+    // -------------------------
 
-    let t = progress;
-
-
-    // 0 → 0.30 : stem
-    let stemAmount =
-        Math.min(1, t / 0.30);
-
-    drawStem(stemAmount);
-
-
-    // Leaves appear after stem starts
-    if (t > 0.18) {
-
-        let leafAmount =
-            Math.min(1, (t - 0.18) / 0.25);
-
-        const x = CX();
-
-        drawLeaf(
-            x - 7,
-            FLOWER_Y() + 105,
-            -0.45,
-            34,
-            leafAmount
+    let stemProgress =
+        Math.min(
+            1,
+            cycle / 3
         );
 
+    drawStem(stemProgress);
+
+
+    // -------------------------
+    // LEAVES
+    // -------------------------
+
+    if (cycle > 1.5) {
+
+        let leafProgress =
+            Math.min(
+                1,
+                (cycle - 1.5) / 1.5
+            );
+
         drawLeaf(
-            x + 3,
-            FLOWER_Y() + 150,
+            flowerX() - 5,
+            H * 0.63,
+            38,
+            -0.5,
+            leafProgress
+        );
+    }
+
+
+    if (cycle > 2.3) {
+
+        let leafProgress =
+            Math.min(
+                1,
+                (cycle - 2.3) / 1.5
+            );
+
+        drawLeaf(
+            flowerX() + 1,
+            H * 0.70,
+            32,
             0.45,
-            28,
-            leafAmount
+            leafProgress
         );
     }
 
 
-    // Flower starts
-    if (t > 0.28) {
+    // -------------------------
+    // FLOWER
+    // -------------------------
 
-        let flowerAmount =
-            Math.min(1, (t - 0.28) / 0.62);
+    if (cycle > 2.5) {
 
-        drawFlower(flowerAmount);
+        let flowerProgress =
+            Math.min(
+                1,
+                (cycle - 2.5) / 6.5
+            );
+
+        drawFlower(
+            flowerProgress
+        );
     }
 
 
-    // Floating hearts
-    if (t > 0.72) {
+    // -------------------------
+    // FLOATING HEARTS
+    // -------------------------
 
-        let particleAmount =
-            Math.min(1, (t - 0.72) / 0.28);
+    if (cycle > 8.5) {
 
-        drawParticles(particleAmount);
-    }
+        let heartProgress =
+            Math.min(
+                1,
+                (cycle - 8.5) / 2
+            );
 
-
-    progress += 0.006;
-
-
-    // Restart after completion
-    if (progress > 1.15) {
-
-        progress = 0;
-
-        createParticles();
+        drawHearts(
+            heartProgress
+        );
     }
 
 
@@ -529,9 +565,9 @@ function animate() {
 }
 
 
-// Start
-createParticles();
-animate();
+createHearts();
+
+requestAnimationFrame(animate);
 
 </script>
 
